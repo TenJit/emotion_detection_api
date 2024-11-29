@@ -4,4 +4,6 @@ pydantic==2.10.2
 numpy==2.0.2
 opencv-python-headless==4.10.0.84
 deepface==0.0.93
+pymongo==4.10.1
+python-dotenv==1.0.1
 tf-keras==2.18.0
