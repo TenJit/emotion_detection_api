@@ -10,6 +10,7 @@ from bson.objectid import ObjectId
 from datetime import datetime , timedelta
 import os
 from dotenv import load_dotenv
+from pytz import timezone
 
 app = FastAPI()
 
@@ -61,9 +62,12 @@ async def detect_emotion(data: ImageData):
 @app.get("/water")
 async def get_water_data():
     try:
-        current_date = datetime.now().strftime("%Y-%m-%d")
-        current_time = datetime.now().strftime("%H:%M:%S")
-        time_now = datetime.now().time()
+        tz = timezone("Asia/Bangkok")
+
+        now = datetime.now(tz)
+        current_date = now.strftime("%Y-%m-%d")
+        current_time = now.strftime("%H:%M:%S")
+        time_now = now.time()
         
         water_data = water_collection.find_one({"date": current_date})
         
