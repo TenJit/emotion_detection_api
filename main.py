@@ -59,7 +59,7 @@ async def detect_emotion(data: ImageData):
             "_id": ObjectId(),
             "emotion": emotion,
             "image_data": image_data,
-            "date_time" : bangkok_time
+            "date_time" : bangkok_time.isoformat()
         }
         inserted_id = emotions_collection.insert_one(emotion_data).inserted_id
         
