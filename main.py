@@ -11,8 +11,17 @@ from datetime import datetime , timedelta
 import os
 from dotenv import load_dotenv
 from pytz import timezone
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"], 
+)
 
 try:
     load_dotenv()
