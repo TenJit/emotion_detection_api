@@ -85,6 +85,7 @@ async def get_water_data():
         if len(water_data["water_time"]) < count_happy_emotion:
             if len(water_data["water_time"]) >= 2:
                 return {
+                    "date": water_data["date"],
                     "result": False,
                     "water_time": water_data["water_time"]
                 }
@@ -97,11 +98,13 @@ async def get_water_data():
                 )
                 water_data = water_collection.find_one({"date": current_date})
                 return{
+                    "date": water_data["date"],
                     "result": True,
                     "water_time": water_data["water_time"]
                 }
         else:
             return {
+                "date": water_data["date"],
                 "result": False,
                 "water_time": water_data["water_time"]
             }
