@@ -63,6 +63,7 @@ async def get_water_data():
     try:
         current_date = datetime.now().strftime("%Y-%m-%d")
         current_time = datetime.now().strftime("%H:%M:%S")
+        time_now = datetime.now().time()
         
         water_data = water_collection.find_one({"date": current_date})
         
@@ -89,6 +90,33 @@ async def get_water_data():
                     "result": False,
                     "water_time": water_data["water_time"]
                 }
+            elif len(water_data["water_time"]) == 1:
+                first_time = datetime.strptime(water_data["water_time"][0]["time"], "%H:%M:%S").time()
+                today_date = datetime.now().date()
+                current_datetime = datetime.combine(today_date, time_now)
+                first_datetime = datetime.combine(today_date, first_time)
+                
+                time_difference = current_datetime - first_datetime
+                
+                if time_difference >= timedelta(hours=4):
+                    water_collection.update_one(
+                        {"_id": water_data["_id"]},
+                        {
+                            "$push": {"water_time": {"time": current_time}}
+                        }
+                    )
+                    water_data = water_collection.find_one({"date": current_date})
+                    return{
+                        "date": water_data["date"],
+                        "result": True,
+                        "water_time": water_data["water_time"]
+                    }
+                else:
+                    return {
+                        "date": water_data["date"],
+                        "result": False,
+                        "water_time": water_data["water_time"]
+                    }
             else:   
                 water_collection.update_one(
                     {"_id": water_data["_id"]},
