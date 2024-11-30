@@ -38,6 +38,7 @@ def read_root():
 @app.post("/detect")
 async def detect_emotion(data: ImageData):
     try:
+        tz = timezone("Asia/Bangkok")
         image_data = data.image
         nparr = np.frombuffer(base64.b64decode(image_data), np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -48,7 +49,7 @@ async def detect_emotion(data: ImageData):
             "_id": ObjectId(),
             "emotion": emotion,
             "image_data": image_data,
-            "date_time" : datetime.now()
+            "date_time" : datetime.now(tz)
         }
         inserted_id = emotions_collection.insert_one(emotion_data).inserted_id
         
@@ -140,5 +141,165 @@ async def get_water_data():
                 "result": False,
                 "water_time": water_data["water_time"]
             }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/emotions/{date}")
+async def get_emotions_by_date(date: str):
+    try:
+        query_date = datetime.strptime(date, "%Y-%m-%d")
+
+        pipeline = [
+            {
+                '$match': {
+                    'date_time': {
+                        '$gte': datetime(query_date.year, query_date.month, query_date.day),
+                        '$lt': datetime(query_date.year, query_date.month, query_date.day) + timedelta(days=1)
+                    }
+                }
+            },
+            {
+                '$group': {
+                    '_id': {
+                        '$dateToString': {
+                            'format': '%Y-%m-%d',
+                            'date': '$date_time'
+                        }
+                    },
+                    'emotions': {
+                        '$push': '$emotion'
+                    }
+                }
+            },
+            {
+                '$unwind': '$emotions'
+            },
+            {
+                '$group': {
+                    '_id': {
+                        'date': '$_id',
+                        'emotion': '$emotions'
+                    },
+                    'count': {
+                        '$sum': 1
+                    }
+                }
+            },
+            {
+                '$group': {
+                    '_id': '$_id.date',
+                    'emotions': {
+                        '$push': {
+                            'emotion': '$_id.emotion',
+                            'count': '$count'
+                        }
+                    }
+                }
+            },
+            {
+                '$sort': {
+                    '_id': -1
+                }
+            }
+        ]
+
+        results = emotions_collection.aggregate(pipeline).to_list()
+
+        return {
+            "date": date,
+            "data": results
+        }
+
+    except ValueError:
+        raise HTTPException(status_code=500, detail="Invalid date format. Please use YYYY-MM-DD format.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    
+@app.get("/emotions")
+async def get_emotions():
+    try:
+        pipeline = [
+            {
+                '$group': {
+                    '_id': {
+                        '$dateToString': {
+                            'format': '%Y-%m-%d', 
+                            'date': '$date_time'
+                        }
+                    }, 
+                    'emotions': {
+                        '$push': '$emotion'
+                    }
+                }
+            }, {
+                '$unwind': '$emotions'
+            }, {
+                '$group': {
+                    '_id': {
+                        'date': '$_id', 
+                        'emotion': '$emotions'
+                    }, 
+                    'count': {
+                        '$sum': 1
+                    }
+                }
+            }, {
+                '$group': {
+                    '_id': '$_id.date', 
+                    'emotion_counts': {
+                        '$push': {
+                            'emotion': '$_id.emotion', 
+                            'count': '$count'
+                        }
+                    }
+                }
+            }, {
+                '$sort': {
+                    '_id': -1
+                }
+            }
+        ]
+
+        results = emotions_collection.aggregate(pipeline).to_list()
+
+        return {
+            "data": results
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.get("/waters")
+async def get_all_water():
+    try:
+        results = water_collection.find().sort("date", -1).to_list()
+        
+        for result in results:
+            result["_id"] = str(result["_id"])
+
+        return {"data": results}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/waters/{date}")
+async def get_water_by_date(date: str):
+    try:
+        query_date = datetime.strptime(date, "%Y-%m-%d").strftime("%Y-%m-%d")
+
+        results = water_collection.find({
+            "date": query_date 
+        }).to_list()
+
+        for result in results:
+            result["_id"] = str(result["_id"])
+
+        return {
+            "data": results
+        }
+
+    except ValueError:
+        raise HTTPException(status_code=500, detail="Invalid date format. Please use YYYY-MM-DD format.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
