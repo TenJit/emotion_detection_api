@@ -48,6 +48,7 @@ def read_root():
 async def detect_emotion(data: ImageData):
     try:
         tz = timezone("Asia/Bangkok")
+        bangkok_time = datetime.now(tz)
         image_data = data.image
         nparr = np.frombuffer(base64.b64decode(image_data), np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -58,7 +59,7 @@ async def detect_emotion(data: ImageData):
             "_id": ObjectId(),
             "emotion": emotion,
             "image_data": image_data,
-            "date_time" : datetime.now(tz)
+            "date_time" : bangkok_time
         }
         inserted_id = emotions_collection.insert_one(emotion_data).inserted_id
         
