@@ -164,55 +164,49 @@ async def get_emotions_by_date(date: str):
 
         pipeline = [
             {
-                '$match': {
-                    'date_time': {
-                        '$gte': datetime(query_date.year, query_date.month, query_date.day),
-                        '$lt': datetime(query_date.year, query_date.month, query_date.day) + timedelta(days=1)
+                "$match": {
+                    "date_time": {
+                        "$gte": query_date.strftime("%Y-%m-%dT00:00:00+07:00"),
+                        "$lt": (query_date + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00+07:00")
                     }
                 }
             },
             {
-                '$group': {
-                    '_id': {
-                        '$dateToString': {
-                            'format': '%Y-%m-%d',
-                            'date': '$date_time'
-                        }
+                "$addFields": {
+                    "parsed_date": {"$substr": ["$date_time", 0, 10]}  # Extract the 'YYYY-MM-DD' part
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$parsed_date",
+                    "emotions": {"$push": "$emotion"}
+                }
+            },
+            {
+                "$unwind": "$emotions"
+            },
+            {
+                "$group": {
+                    "_id": {
+                        "date": "$_id",
+                        "emotion": "$emotions"
                     },
-                    'emotions': {
-                        '$push': '$emotion'
-                    }
+                    "count": {"$sum": 1}
                 }
             },
             {
-                '$unwind': '$emotions'
-            },
-            {
-                '$group': {
-                    '_id': {
-                        'date': '$_id',
-                        'emotion': '$emotions'
-                    },
-                    'count': {
-                        '$sum': 1
-                    }
-                }
-            },
-            {
-                '$group': {
-                    '_id': '$_id.date',
-                    'emotions': {
-                        '$push': {
-                            'emotion': '$_id.emotion',
-                            'count': '$count'
+                "$group": {
+                    "_id": "$_id.date",
+                    "emotions": {
+                        "$push": {
+                            "emotion": "$_id.emotion",
+                            "count": "$count"
                         }
                     }
                 }
             },
             {
-                '$sort': {
-                    '_id': -1
-                }
+                "$sort": {"_id": -1}
             }
         ]
 
@@ -234,13 +228,16 @@ async def get_emotions():
     try:
         pipeline = [
             {
+                '$addFields': {
+                    'parsed_date': {
+                        '$substr': [
+                            '$date_time', 0, 10
+                        ]
+                    }
+                }
+            }, {
                 '$group': {
-                    '_id': {
-                        '$dateToString': {
-                            'format': '%Y-%m-%d', 
-                            'date': '$date_time'
-                        }
-                    }, 
+                    '_id': '$parsed_date', 
                     'emotions': {
                         '$push': '$emotion'
                     }
