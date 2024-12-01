@@ -90,11 +90,14 @@ async def get_water_data():
             water_collection.insert_one(water_data)
             water_data = water_collection.find_one({"date": current_date})
         
+        start_of_day = tz.localize(datetime.strptime(current_date, "%Y-%m-%d"))
+        end_of_day = start_of_day + timedelta(days=1)
+        
         count_happy_emotion = emotions_collection.count_documents({
             "emotion": "happy",
             "date_time": {
-                "$gte": datetime.strptime(current_date, "%Y-%m-%d"), 
-                "$lt": datetime.strptime(current_date, "%Y-%m-%d") + timedelta(days=1)
+                "$gte": start_of_day.isoformat(),
+                "$lt": end_of_day.isoformat()
             }
         })
         
@@ -107,7 +110,7 @@ async def get_water_data():
                 }
             elif len(water_data["water_time"]) == 1:
                 first_time = datetime.strptime(water_data["water_time"][0]["time"], "%H:%M:%S").time()
-                today_date = datetime.now().date()
+                today_date = now.date()
                 current_datetime = datetime.combine(today_date, time_now)
                 first_datetime = datetime.combine(today_date, first_time)
                 
@@ -121,7 +124,7 @@ async def get_water_data():
                         }
                     )
                     water_data = water_collection.find_one({"date": current_date})
-                    return{
+                    return {
                         "date": water_data["date"],
                         "result": True,
                         "water_time": water_data["water_time"]
@@ -140,7 +143,7 @@ async def get_water_data():
                     }
                 )
                 water_data = water_collection.find_one({"date": current_date})
-                return{
+                return {
                     "date": water_data["date"],
                     "result": True,
                     "water_time": water_data["water_time"]
