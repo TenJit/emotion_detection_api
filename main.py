@@ -38,6 +38,7 @@ db = client["emotion_detection"]  # Database name
 emotions_collection = db["emotions"]  # Collection name
 water_collection = db["water"]
 sensor_collection = db["sensor_averages"]
+blynk_collection = db["blynk_status"]
 class ImageData(BaseModel):
     image: str 
     
@@ -81,6 +82,8 @@ async def get_water_data():
         current_time = now.strftime("%H:%M:%S")
         time_now = now.time()
         
+        blynk_data = blynk_collection.find_one({"_id": ObjectId("674c1873a37c51329d2e4943")})
+        
         water_data = water_collection.find_one({"date": current_date})
         
         if not water_data:
@@ -107,6 +110,7 @@ async def get_water_data():
                 return {
                     "date": water_data["date"],
                     "result": False,
+                    "blynk": blynk_data["blynk_enable"],
                     "water_time": water_data["water_time"]
                 }
             elif len(water_data["water_time"]) == 1:
@@ -128,12 +132,14 @@ async def get_water_data():
                     return {
                         "date": water_data["date"],
                         "result": True,
+                        "blynk": blynk_data["blynk_enable"],
                         "water_time": water_data["water_time"]
                     }
                 else:
                     return {
                         "date": water_data["date"],
                         "result": False,
+                        "blynk": blynk_data["blynk_enable"],
                         "water_time": water_data["water_time"]
                     }
             else:   
@@ -147,12 +153,14 @@ async def get_water_data():
                 return {
                     "date": water_data["date"],
                     "result": True,
+                    "blynk": blynk_data["blynk_enable"],
                     "water_time": water_data["water_time"]
                 }
         else:
             return {
                 "date": water_data["date"],
                 "result": False,
+                "blynk": blynk_data["blynk_enable"],
                 "water_time": water_data["water_time"]
             }
     except Exception as e:
