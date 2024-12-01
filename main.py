@@ -37,6 +37,7 @@ except Exception as e:
 db = client["emotion_detection"]  # Database name
 emotions_collection = db["emotions"]  # Collection name
 water_collection = db["water"]
+sensor_collection = db["sensor_averages"]
 class ImageData(BaseModel):
     image: str 
     
@@ -299,6 +300,40 @@ async def get_water_by_date(date: str):
         query_date = datetime.strptime(date, "%Y-%m-%d").strftime("%Y-%m-%d")
 
         results = water_collection.find({
+            "date": query_date 
+        }).to_list()
+
+        for result in results:
+            result["_id"] = str(result["_id"])
+
+        return {
+            "data": results
+        }
+
+    except ValueError:
+        raise HTTPException(status_code=500, detail="Invalid date format. Please use YYYY-MM-DD format.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/sensor")
+async def get_sensor_value():
+    try:
+        results = sensor_collection.find().sort("date", -1).to_list()
+        
+        for result in results:
+            result["_id"] = str(result["_id"])
+
+        return {"data": results}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/sensor/{date}")
+async def get_sensor_value(date:str):
+    try:
+        query_date = datetime.strptime(date, "%Y-%m-%d").strftime("%Y-%m-%d")
+
+        results = sensor_collection.find({
             "date": query_date 
         }).to_list()
 
