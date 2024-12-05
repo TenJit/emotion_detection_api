@@ -384,7 +384,7 @@ def get_eid_error():
         if not eid_data:
             raise HTTPException(status_code=404, detail="No records found")
 
-        eid = eid_data["eid"]
+        eid = eid_data.get("eid")
         
         if eid is None:
             raise HTTPException(status_code=400, detail="'eid' field is missing in the record")
@@ -392,5 +392,7 @@ def get_eid_error():
         eid_collection.delete_one({"_id": eid_data["_id"]})
 
         return {"eid": eid}
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
