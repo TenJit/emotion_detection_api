@@ -39,6 +39,8 @@ emotions_collection = db["emotions"]  # Collection name
 water_collection = db["water"]
 sensor_collection = db["sensor_averages"]
 blynk_collection = db["blynk_status"]
+scrape_collection = db["scrape"]
+eid_collection = db["eid_error"]
 class ImageData(BaseModel):
     image: str 
     
@@ -354,5 +356,41 @@ async def get_sensor_value(date:str):
 
     except ValueError:
         raise HTTPException(status_code=500, detail="Invalid date format. Please use YYYY-MM-DD format.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.get("/scrapeIndex")
+def get_scrape_index():
+    try:
+        scrape_index = scrape_collection.find_one({"_id": ObjectId("675197b8a37c51329d2e49a5")})
+        index = scrape_index["count"]
+        scrape_collection.update_one(
+            {"_id": ObjectId("675197b8a37c51329d2e49a5")},
+            {"$inc": {"count": 1}}
+        )
+        return {
+            "index" : index
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.get("/eidError")
+def get_eid_error():
+    try:
+        eid_data = eid_collection.find_one({})
+        
+        if not eid_data:
+            raise HTTPException(status_code=404, detail="No records found")
+
+        eid = eid_data["eid"]
+        
+        if eid is None:
+            raise HTTPException(status_code=400, detail="'eid' field is missing in the record")
+
+        eid_collection.delete_one({"_id": eid_data["_id"]})
+
+        return {"eid": eid}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
