@@ -26,10 +26,9 @@ app.add_middleware(
 try:
     load_dotenv()
     mongodb_uri = os.getenv("MONGODB_URI")    
-    print(f"Connecting to MongoDB using URI: {mongodb_uri}")
     client = MongoClient(mongodb_uri)
     client.admin.command('ping')  # Test the connection
-    print("Successfully connected to MongoDB! & connection strings = ",mongodb_uri)
+    print("Successfully connected to MongoDB! & connection strings")
 except Exception as e:
     print(f"Error occurred while connecting to MongoDB: {e}")
     raise
@@ -40,7 +39,7 @@ water_collection = db["water"]
 sensor_collection = db["sensor_averages"]
 blynk_collection = db["blynk_status"]
 scrape_collection = db["scrape"]
-eid_collection = db["eid_error"]
+api_error_collection = db["API_ERROR"]
 class ImageData(BaseModel):
     image: str 
     
@@ -379,19 +378,19 @@ def get_scrape_index():
 @app.get("/eidError")
 def get_eid_error():
     try:
-        eid_data = eid_collection.find_one({})
+        api_error_data = api_error_collection.find_one({})
         
-        if not eid_data:
+        if not api_error_data:
             raise HTTPException(status_code=404, detail="No records found")
 
-        eid = eid_data.get("eid")
+        ind = api_error_data.get("index")
         
-        if eid is None:
-            raise HTTPException(status_code=400, detail="'eid' field is missing in the record")
+        if ind is None:
+            raise HTTPException(status_code=400, detail="'ind' field is missing in the record")
 
-        eid_collection.delete_one({"_id": eid_data["_id"]})
+        api_error_collection.delete_one({"_id": api_error_data["_id"]})
 
-        return {"eid": eid}
+        return {"index": ind}
     except HTTPException as e:
         raise e
     except Exception as e:
